@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gato Cazador – juego gratis de gatos y ratones</title>
+    <meta name="description" content="Gato Cazador: juego gratis para el navegador. Caza ratones que aprenden de ti, sube de nivel, desbloquea personajes y guarda tu progreso con una cuenta.">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#256087">
+    <link rel="canonical" href="https://michino999.github.io/gato-cazador/">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐱</text></svg>">
+    <!-- Para que Google reconozca el nombre y la página al compartirla -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Gato Cazador">
+    <meta property="og:title" content="Gato Cazador – juego gratis de gatos y ratones">
+    <meta property="og:description" content="Gato Cazador: juego gratis para el navegador. Caza ratones que aprenden de ti, sube de nivel, desbloquea personajes y guarda tu progreso con una cuenta.">
+    <meta property="og:url" content="https://michino999.github.io/gato-cazador/">
+    <meta property="og:locale" content="es_LA">
+    <meta name="twitter:card" content="summary">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        "name": "Gato Cazador",
+        "url": "https://michino999.github.io/gato-cazador/",
+        "description": "Gato Cazador: juego gratis para el navegador. Caza ratones que aprenden de ti, sube de nivel, desbloquea personajes y guarda tu progreso con una cuenta.",
+        "inLanguage": "es",
+        "genre": "Arcade",
+        "gamePlatform": "Navegador web",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+    </script>
+    <!-- Cuando Google Search Console te dé la etiqueta de verificación, pégala aquí abajo:
+    <meta name="google-site-verification" content="TU_CODIGO"> -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; background: #256087; font-family: 'Press Start 2P', cursive; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; color: white; }
+        .menu { text-align: center; background: #c6c6c6; padding: 40px; border: 4px solid #fff; box-shadow: 6px 6px 0px #000; color: black; line-height: 1.6; }
+        button { padding: 15px; font-size: 14px; cursor: pointer; background: #c6c6c6; border: 4px solid #fff; box-shadow: 4px 4px 0 #000; font-family: 'Press Start 2P', cursive; margin: 5px; width: 280px; }
+        button:hover { background: #e0e0e0; }
+        /* Para quien navega con teclado: se ve qué botón está seleccionado */
+        button:focus-visible { outline: 3px solid #ffd700; outline-offset: 2px; }
+        canvas { border: 4px solid #fff; background: black; display: none; max-width: 100%; height: auto; touch-action: none; }
+        #marcador {
+            display: none; /* Se oculta por defecto, el JS lo muestra con "flex" */
+            width: 600px;
+            max-width: 100%;
+            box-sizing: border-box; /* El padding y el borde ya no ensanchan la caja */
+            margin: 10px auto; /* Centrado automático */
+            padding: 12px;
+            background: #1f1f1f;
+            color: white;
+            border: 4px solid white;
+            border-radius: 12px;
+            font-size: 12px;
+            justify-content: space-between;
+            flex-wrap: wrap; /* Si la pantalla es angosta, baja a otra fila en vez de salirse */
+            gap: 8px;
+            box-shadow: 4px 4px 0px black;
+            /* Esto ayuda a que no empuje otros elementos */
+            position: relative;
+        }
+        /* Con 7 personajes la lista puede ser larga: se desplaza dentro de la tienda */
+        #lista-tienda { max-height: 45vh; overflow-y: auto; }
+        input { padding: 15px; font-size: 12px; font-family: 'Press Start 2P', cursive; width: 280px; margin: 5px; background: #fff; border: 4px solid #fff; box-shadow: 4px 4px 0 #000; color: black; }
+        input:focus-visible { outline: 3px solid #ffd700; outline-offset: 2px; }
+        button:disabled { opacity: 0.5; cursor: default; }
+        #logro { position: fixed; top: 20px; right: -400px; max-width: 340px; line-height: 1.4; background: #222; color: gold; padding: 15px 20px; border: 3px solid gold; border-radius: 12px; font-size: 14px; box-shadow: 4px 4px 0px black; z-index: 999; transition: right 0.5s ease; }
+    </style>
+</head>
+<body>
+<noscript><p style="font-size: 12px;">Gato Cazador necesita JavaScript para funcionar. Actívalo en tu navegador.</p></noscript>
+
+<div id="menu-inicio" class="menu">
+    <h1>GATO CAZADOR</h1>
+
+    <!-- Color corregido: antes era #e600082c (el "2c" final lo volvía casi transparente) -->
+    <p style="font-size: 13px; color: #b30009; margin-bottom: 10px; text-shadow: 1px 1px 0px #000; font-weight: bold;">
+        AMENAZA I.A.: LVL <span id="ia-nivel">1</span>
+    </p>
+    <p style="font-size: 12px; margin-top: 0; margin-bottom: 10px;">
+        Récord: <span id="record-valor">0</span>
+    </p>
+    <p style="font-size: 10px; margin-top: 0; margin-bottom: 25px;">
+        Flechas o WASD para moverte · P pausa<br>En móvil: mantén el dedo en la pantalla
+    </p>
+
+    <p style="font-size: 9px; max-width: 280px; margin: 0 auto 20px;">Juego gratis para el navegador: caza ratones, sube de nivel y desbloquea personajes.</p>
+
+    <button onclick="empezarJuego()">Jugar</button>
+    <button onclick="abrirAjustes()">Ajustes</button>
+    <button id="btn-sesion" onclick="botonSesion()" style="display:none;">Iniciar sesión</button>
+    <p id="sesion-estado" style="font-size: 10px; margin: 10px 0 0; display: none;"></p>
+    <p style="font-size: 8px; margin: 15px 0 0;">v9 · listo para Google</p>
+</div>
+
+    <div id="menu-login" class="menu" style="display:none;">
+        <h2>TU CUENTA</h2>
+        <p style="font-size: 10px; margin-top: 0;">Guarda tu progreso y juega en cualquier dispositivo</p>
+        <input id="login-nombre" type="text" placeholder="Nombre" maxlength="20" autocomplete="username" autocapitalize="none" spellcheck="false" onkeydown="if (event.key === 'Enter') iniciarSesion()"><br>
+        <input id="login-clave" type="password" placeholder="Contraseña" autocomplete="current-password" onkeydown="if (event.key === 'Enter') iniciarSesion()">
+        <p id="login-mensaje" style="min-height: 2.4em; font-size: 10px; margin: 8px 0;"></p>
+        <button id="btn-entrar" onclick="iniciarSesion()">Entrar</button>
+        <button id="btn-crear" onclick="crearCuenta()">Crear cuenta</button>
+        <button onclick="jugarSinCuenta()">Jugar sin cuenta</button>
+    </div>
+
+    <div id="menu-ajustes" class="menu" style="display:none;">
+        <h2>AJUSTES</h2>
+        <button onclick="cambiarDificultad()" id="btn-dificultad">Dificultad: Fácil</button>
+        <button onclick="cambiarSonido()" id="btn-sonido">Sonido: Sí</button>
+        <button onclick="cambiarMusica()" id="btn-musica">Música: Sí</button>
+        <button onclick="abrirTienda()">Tienda de Skins</button>
+        <button onclick="borrarProgreso()">Borrar progreso</button>
+        <button onclick="volverMenu()">Volver</button>
+    </div>
+<div id="menu-tienda" class="menu" style="display:none;">
+    <h2>TIENDA</h2>
+    <p>Monedas: <span id="monedas-tienda">0</span></p>
+
+    <div id="lista-tienda">
+        <!-- Los botones de personajes los crea juego.js a partir de la lista SKINS -->
+    </div>
+
+    <button onclick="volverMenu()">Volver</button>
+</div>
+
+    <canvas id="juego" width="600" height="400"></canvas>
+
+    <div id="marcador">
+        <span>Puntos: <span id="puntos-valor">0</span></span>
+        <span>Monedas: <span id="monedas-valor">0</span></span>
+        <span>Nivel: <span id="nivel-valor">1</span></span>
+        <span>Tiempo: <span id="tiempo-valor">60</span></span>
+    </div>
+
+    <div id="fin-juego" class="menu" style="display:none;">
+        <h1>¡TIEMPO AGOTADO!</h1>
+        <p>Puntuación: <span id="puntos-finales"></span></p>
+        <p>Monedas ganadas: <span id="monedas-partida">0</span></p>
+        <p>Récord: <span id="record-final">0</span></p>
+        <p id="mensaje-record" style="display:none; color: #b30009;">¡NUEVO RÉCORD!</p>
+        <button onclick="reiniciarJuego()">Volver a jugar</button>
+        <button onclick="volverMenu()">Ir al Menú</button>
+    </div>
+
+    <div id="logro"></div>
+
+    <script>
+// ============================================================
+//  GATO CAZADOR - juego.js (versión corregida)
+// ============================================================
+const canvas = document.getElementById("juego");
+const ctx = canvas.getContext("2d");
+
+// --- CONSTANTES: todos los números "de diseño" en un solo lugar ---
+const DURACION_PARTIDA = 60;        // segundos que dura una partida
+const BONUS_TIEMPO_NIVEL = 5;       // segundos extra al subir de nivel (pon 0 para quitarlo)
+const CAPTURAS_POR_NIVEL = 5;       // ratones que hay que cazar para subir de nivel
+const RADIO_CAPTURA = 40;           // distancia (px) entre centros para contar como captura
+const DISTANCIA_MIN_APARICION = 150; // el ratón nunca reaparece más cerca que esto del gato
+const TOPE_APRENDIZAJE = 100;       // a partir de aquí la IA del ratón ya no mejora más
+const CAPTURAS_POR_NIVEL_IA = 5;    // capturas históricas necesarias para subir 1 nivel de "Amenaza I.A."
+
+// La dificultad ahora SÍ afecta al ratón (antes solo cambiaba la velocidad del gato)
+const DIFICULTADES = [
+    { nombre: "Fácil",   velGato: 5, factorRaton: 0.8, factorVision: 0.8, monedasPorCaptura: 10 },
+    { nombre: "Normal",  velGato: 5, factorRaton: 1.0, factorVision: 1.0, monedasPorCaptura: 20 },
+    { nombre: "Difícil", velGato: 5, factorRaton: 1.2, factorVision: 1.15, monedasPorCaptura: 30 }
+];
+
+// Personajes de la tienda. "velocidad" es un multiplicador (1 = normal, 1.1 = 10% más rápido).
+// Para añadir uno nuevo solo agrega una línea aquí: el botón de la tienda se crea solo.
+const SKINS = [
+    { emoji: "🐱", nombre: "Gato",     precio: 0,    velocidad: 1 },
+    { emoji: "🐯", nombre: "Tigre",    precio: 100,  velocidad: 1 },
+    { emoji: "🐆", nombre: "Leopardo", precio: 200,  velocidad: 1.05 },
+    { emoji: "🦊", nombre: "Zorro",    precio: 300,  velocidad: 1.08 },
+    { emoji: "🦁", nombre: "León",     precio: 500,  velocidad: 1.1 },
+    { emoji: "🐺", nombre: "Lobo",     precio: 800,  velocidad: 1.12 },
+    { emoji: "🐲", nombre: "Dragón",   precio: 1500, velocidad: 1.15 }
+];
+
+// Cada nivel cambia el color del fondo, y cada 2 niveles cambia el ratón
+const FONDOS = ["#000000", "#0b1b3a", "#2a0b3a", "#3a0b0b", "#0b3a1f"];
+const RATONES = ["🐭", "🐹", "🐀", "🐿️"];
+const NIVELES_POR_RATON = 2;
+
+// --- PERFIL ACTIVO ---
+// Sin cuenta, el progreso se guarda con claves normales. Con cuenta, las claves del progreso llevan el
+// id del usuario delante: así dos cuentas (o una cuenta y "sin cuenta") nunca mezclan su progreso.
+let sesion = null; // { uid, nombre } cuando hay cuenta iniciada
+const CLAVES_PROGRESO = ["record", "monedas", "skin", "skinsCompradas", "experienciaRaton", "dificultad", "actualizado"];
+
+function claveAlmacen(clave) {
+    return sesion && CLAVES_PROGRESO.includes(clave) ? `u_${sesion.uid}_${clave}` : clave;
+}
+
+// --- ALMACENAMIENTO SEGURO ---
+// localStorage puede fallar (modo privado, datos corruptos). Estas funciones evitan que el juego se rompa.
+function leerNumero(clave) {
+    try {
+        const n = Number(localStorage.getItem(claveAlmacen(clave)));
+        return Number.isFinite(n) ? n : 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function leerTexto(clave, porDefecto) {
+    try {
+        const valor = localStorage.getItem(claveAlmacen(clave));
+        return valor !== null ? valor : porDefecto;
+    } catch (e) {
+        return porDefecto;
+    }
+}
+
+function leerLista(clave, porDefecto) {
+    try {
+        const dato = JSON.parse(localStorage.getItem(claveAlmacen(clave)));
+        return Array.isArray(dato) ? dato : porDefecto;
+    } catch (e) {
+        return porDefecto;
+    }
+}
+
+// Guarda solo en este dispositivo
+function guardarLocal(clave, valor) {
+    try {
+        localStorage.setItem(claveAlmacen(clave), valor);
+    } catch (e) {
+        // Si no se puede guardar, el juego sigue funcionando (solo no recordará el progreso)
+    }
+}
+
+// Guarda en el dispositivo y, si hay cuenta, programa la subida a la nube
+function guardar(clave, valor) {
+    guardarLocal(clave, valor);
+    if (sesion && CLAVES_PROGRESO.includes(clave) && clave !== "actualizado") {
+        guardarLocal("actualizado", Date.now()); // para saber qué copia es más reciente
+        programarSubidaNube();
+    }
+}
+
+// --- VARIABLES ---
+let tiempo = DURACION_PARTIDA;
+let puntos = 0;
+let record = leerNumero("record");
+let juegoIniciado = false;
+let nivel = 1;
+let dificultad = Math.min(3, Math.max(1, leerNumero("dificultad") || 1));
+let velocidadGato = DIFICULTADES[dificultad - 1].velGato;
+let monedas = leerNumero("monedas");
+let monedasPartida = 0;
+let skinsCompradas = leerLista("skinsCompradas", ["🐱"]);
+if (!skinsCompradas.includes("🐱")) skinsCompradas.push("🐱");
+let skinActual = leerTexto("skin", "🐱");
+if (!skinsCompradas.includes(skinActual)) skinActual = "🐱"; // por si el dato guardado es inválido
+let experienciaRaton = leerNumero("experienciaRaton");
+let sonidoActivo = leerTexto("sonido", "1") === "1"; // el jugador puede silenciarlo en Ajustes
+let musicaActiva = leerTexto("musica", "1") === "1"; // música de fondo (archivo musica.mp3)
+let musicaBuffer = null;      // la canción ya decodificada
+let musicaGanancia = null;    // control de volumen de la música
+let musicaElemento = null;    // plan B: <audio> normal si el navegador no deja cargar el archivo con fetch
+let musicaIntentada = false;  // para cargar el archivo una sola vez
+let musicaQuiereSonar = null; // último estado pedido (sonando / en silencio)
+const VOLUMEN_MUSICA = 0.5;    // 0 a 1 (el MP3 ya está normalizado; baja este número si se oye muy fuerte)
+let audioCtx = null; // se crea con el primer clic/tecla (los navegadores no permiten audio antes)
+
+let gato = { x: 300, y: 200, w: 35, h: 35 };
+let raton = { x: 100, y: 100, w: 25, h: 25, targetX: null, targetY: null };
+
+// Control del bucle y de las teclas
+let animacionId = null;       // id del requestAnimationFrame actual (para no duplicar bucles)
+let ultimoTimestamp = null;   // marca de tiempo del frame anterior
+let ultimoSegundoMostrado = null;
+const teclas = { arriba: false, abajo: false, izquierda: false, derecha: false };
+let pausado = false;                        // true mientras el juego está en pausa
+const toque = { activo: false, x: 0, y: 0 }; // dedo o mouse apoyado sobre el canvas
+
+// --- SONIDO ---
+// Todos los sonidos se fabrican con osciladores (Web Audio API): no hay archivos .mp3 que cargar.
+function prepararAudio() {
+    if (audioCtx) {
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        return;
+    }
+    const Contexto = window.AudioContext || window.webkitAudioContext;
+    if (!Contexto) return;
+    try {
+        audioCtx = new Contexto();
+    } catch (e) {
+        audioCtx = null;
+    }
+    cargarMusica();
+}
+
+// --- MÚSICA DE FONDO ---
+// Se carga "musica.mp3" (debe estar en la misma carpeta que index.html) y se repite sin cortes.
+function cargarMusica() {
+    if (!audioCtx || musicaIntentada) return;
+    musicaIntentada = true;
+    try {
+        fetch("musica.mp3")
+            .then((respuesta) => {
+                if (!respuesta.ok) {
+                    mostrarLogro("No se encontró musica.mp3 junto a index.html");
+                    throw new Error("musica.mp3 no encontrado");
+                }
+                return respuesta.arrayBuffer();
+            })
+            .then((datos) => new Promise((resolver, fallar) => audioCtx.decodeAudioData(datos, resolver, fallar)))
+            .then((buffer) => {
+                musicaBuffer = buffer;
+                mostrarLogro("🎵 Música lista");
+                iniciarMusica();
+            })
+            .catch(planBMusica);
+    } catch (e) {
+        planBMusica();
+    }
+}
+
+// Reproductor con Web Audio: el bucle es perfecto (sin pausa al repetir)
+function iniciarMusica() {
+    if (!audioCtx || !musicaBuffer) return;
+    musicaGanancia = audioCtx.createGain();
+    musicaGanancia.gain.value = 0;
+    musicaGanancia.connect(audioCtx.destination);
+    const fuente = audioCtx.createBufferSource();
+    fuente.buffer = musicaBuffer;
+    fuente.loop = true;
+    fuente.connect(musicaGanancia);
+    fuente.start(0);
+    musicaQuiereSonar = null;
+    sincronizarMusica();
+}
+
+// Plan B: si abres index.html directo desde la carpeta (file://), fetch no puede leer el archivo.
+// Entonces se usa un <audio> normal, que repite con una pausita casi imperceptible.
+function planBMusica() {
+    if (musicaElemento || musicaBuffer) return;
+    try {
+        musicaElemento = new Audio("musica.mp3");
+        musicaElemento.loop = true;
+        musicaElemento.volume = 0;
+        musicaElemento.addEventListener("error", () => mostrarLogro("No se pudo cargar musica.mp3 (¿está junto a index.html?)"));
+        const promesa = musicaElemento.play();
+        if (promesa && promesa.catch) promesa.catch(() => {});
+    } catch (e) {
+        musicaElemento = null;
+    }
+    musicaQuiereSonar = null;
+    sincronizarMusica();
+}
+
+function ponerVolumenMusica(volumen) {
+    if (musicaGanancia && audioCtx) {
+        musicaGanancia.gain.setTargetAtTime(volumen, audioCtx.currentTime, 0.1); // sube/baja suave
+    } else if (musicaElemento) {
+        musicaElemento.volume = volumen;
+    }
+}
+
+// La música suena solo durante la partida, y se silencia en pausa, al terminar o si la apagas
+function sincronizarMusica() {
+    const quiereSonar = musicaActiva && juegoIniciado && !pausado;
+    if (quiereSonar === musicaQuiereSonar) return;
+    musicaQuiereSonar = quiereSonar;
+    if (quiereSonar) {
+        // Algunos navegadores dejan el audio "dormido" hasta que el jugador interactúa: lo despertamos
+        if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+        if (musicaElemento && musicaElemento.paused) {
+            const promesa = musicaElemento.play();
+            if (promesa && promesa.catch) promesa.catch(() => {});
+        }
+    }
+    ponerVolumenMusica(quiereSonar ? VOLUMEN_MUSICA : 0);
+}
+
+// Un pitido: va de "frecuencia" a "frecuenciaFinal" durante "duracion" segundos y se apaga suave
+function tono(frecuencia, frecuenciaFinal, duracion, tipo, volumen, retraso) {
+    if (!sonidoActivo || !audioCtx) return;
+    const inicio = audioCtx.currentTime + (retraso || 0);
+    const oscilador = audioCtx.createOscillator();
+    const ganancia = audioCtx.createGain();
+    oscilador.type = tipo || "square";
+    oscilador.frequency.setValueAtTime(frecuencia, inicio);
+    oscilador.frequency.exponentialRampToValueAtTime(Math.max(1, frecuenciaFinal), inicio + duracion);
+    ganancia.gain.setValueAtTime(volumen || 0.1, inicio);
+    ganancia.gain.exponentialRampToValueAtTime(0.0001, inicio + duracion);
+    oscilador.connect(ganancia);
+    ganancia.connect(audioCtx.destination);
+    oscilador.start(inicio);
+    oscilador.stop(inicio + duracion + 0.02);
+}
+
+// Melodía corta: lista de notas, una detrás de otra
+function melodia(notas, duracionNota, tipo, volumen) {
+    notas.forEach((nota, i) => tono(nota, nota, duracionNota, tipo, volumen, i * duracionNota * 0.9));
+}
+
+const SONIDOS = {
+    captura: () => tono(600, 1200, 0.12, "square", 0.1),
+    nivel: () => melodia([523, 659, 784, 1047], 0.12, "square", 0.1),
+    compra: () => melodia([880, 1320], 0.1, "square", 0.1),
+    equipar: () => tono(700, 900, 0.08, "triangle", 0.12),
+    error: () => tono(200, 120, 0.25, "sawtooth", 0.1),
+    pausa: () => tono(500, 400, 0.1, "triangle", 0.1),
+    fin: () => melodia([523, 392, 330, 262], 0.2, "triangle", 0.12),
+    record: () => melodia([659, 784, 988, 1319, 1568], 0.12, "square", 0.1)
+};
+
+function sonar(nombre) {
+    if (SONIDOS[nombre]) SONIDOS[nombre]();
+}
+
+// --- AVISOS EN PANTALLA (el cuadro dorado #logro, que antes no se usaba) ---
+let temporizadorLogro = null;
+
+function mostrarLogro(texto) {
+    const elemento = document.getElementById("logro");
+    if (!elemento) return;
+    elemento.textContent = texto;
+    elemento.style.right = "20px";
+    clearTimeout(temporizadorLogro);
+    temporizadorLogro = setTimeout(() => {
+        elemento.style.right = "-400px";
+    }, 2200);
+}
+
+// --- IA Y ACTUALIZACIÓN VISUAL ---
+function actualizarNivelVisualIA() {
+    // Ahora lee la variable en memoria (siempre está sincronizada con localStorage)
+    let nivelIA = Math.floor(experienciaRaton / CAPTURAS_POR_NIVEL_IA) + 1;
+
+    const elemento = document.getElementById("ia-nivel");
+    if (elemento) {
+        elemento.innerText = experienciaRaton >= TOPE_APRENDIZAJE ? nivelIA + " (MAX)" : nivelIA;
+    }
+
+    const elementoRecord = document.getElementById("record-valor");
+    if (elementoRecord) elementoRecord.innerText = record;
+}
+
+// Pone en el marcador los valores reales (antes las monedas no se refrescaban al empezar)
+function actualizarMarcador() {
+    document.getElementById("puntos-valor").innerText = puntos;
+    document.getElementById("monedas-valor").innerText = monedas;
+    document.getElementById("nivel-valor").innerText = nivel;
+    document.getElementById("tiempo-valor").innerText = Math.max(0, Math.ceil(tiempo));
+}
+
+// --- GESTOR CENTRAL DE PANTALLAS ---
+const PANTALLAS = ["menu-inicio", "menu-login", "menu-ajustes", "menu-tienda", "fin-juego", "juego", "marcador"];
+
+function cambiarPantalla(pantallaObjetivo) {
+    // Apaga todas las pantallas
+    PANTALLAS.forEach((id) => {
+        const elemento = document.getElementById(id);
+        if (elemento) elemento.style.display = "none";
+    });
+
+    // Enciende solo la correspondiente
+    if (pantallaObjetivo === "juego") {
+        document.getElementById("juego").style.display = "block";
+        document.getElementById("marcador").style.display = "flex";
+    } else {
+        const pantalla = document.getElementById(pantallaObjetivo);
+        if (pantalla) pantalla.style.display = "block";
+    }
+}
+
+// --- NAVEGACIÓN ---
+function reaparecerRaton() {
+    // Busca un punto aleatorio que no quede encima del gato
+    const centroGatoX = gato.x + gato.w / 2;
+    const centroGatoY = gato.y + gato.h / 2;
+
+    for (let intento = 0; intento < 30; intento++) {
+        const x = Math.random() * (canvas.width - raton.w);
+        const y = Math.random() * (canvas.height - raton.h);
+        const distancia = Math.hypot(x + raton.w / 2 - centroGatoX, y + raton.h / 2 - centroGatoY);
+        if (distancia >= DISTANCIA_MIN_APARICION) {
+            raton.x = x;
+            raton.y = y;
+            raton.targetX = null;
+            raton.targetY = null;
+            return;
+        }
+    }
+
+    // Plan B (casi nunca ocurre): la esquina opuesta al gato
+    raton.x = centroGatoX < canvas.width / 2 ? canvas.width - raton.w : 0;
+    raton.y = centroGatoY < canvas.height / 2 ? canvas.height - raton.h : 0;
+    raton.targetX = null;
+    raton.targetY = null;
+}
+
+function empezarJuego() {
+    // Si por algún motivo ya había un bucle corriendo, lo cancelamos para no tener dos a la vez
+    if (animacionId !== null) {
+        cancelAnimationFrame(animacionId);
+        animacionId = null;
+    }
+
+    juegoIniciado = true;
+    pausado = false;
+    toque.activo = false;
+    tiempo = DURACION_PARTIDA;
+    puntos = 0;
+    nivel = 1;
+    monedasPartida = 0;
+    ultimoTimestamp = null;
+    ultimoSegundoMostrado = null;
+
+    // Reinicia posiciones y teclas
+    gato.x = canvas.width / 2 - gato.w / 2;
+    gato.y = canvas.height / 2 - gato.h / 2;
+    teclas.arriba = teclas.abajo = teclas.izquierda = teclas.derecha = false;
+    reaparecerRaton();
+
+    actualizarMarcador();
+    cambiarPantalla("juego");
+    sincronizarMusica();
+    animacionId = requestAnimationFrame(gameLoop);
+}
+
+function terminarJuego() {
+    juegoIniciado = false;
+    if (animacionId !== null) {
+        cancelAnimationFrame(animacionId);
+        animacionId = null;
+    }
+
+    // Récord: ahora se guarda de verdad
+    const esRecord = puntos > record;
+    if (esRecord) {
+        record = puntos;
+        guardar("record", record);
+    }
+
+    sincronizarMusica();
+    subirProgreso(); // al terminar la partida se sube de inmediato
+    sonar(esRecord ? "record" : "fin");
+    cambiarPantalla("fin-juego");
+    document.getElementById("puntos-finales").innerText = puntos;
+    document.getElementById("monedas-partida").innerText = monedasPartida;
+    document.getElementById("record-final").innerText = record;
+    document.getElementById("mensaje-record").style.display = esRecord ? "block" : "none";
+    actualizarNivelVisualIA();
+}
+
+function reiniciarJuego() {
+    empezarJuego();
+}
+
+function abrirAjustes() {
+    cambiarPantalla("menu-ajustes");
+}
+
+function abrirTienda() {
+    construirTienda(); // por seguridad: si aún no existían los botones, se crean ahora
+    cambiarPantalla("menu-tienda");
+    document.getElementById("monedas-tienda").innerText = monedas;
+    actualizarBotonesTienda();
+}
+
+function volverMenu() {
+    cambiarPantalla("menu-inicio");
+    actualizarNivelVisualIA();
+}
+
+function actualizarTextoDificultad() {
+    document.getElementById("btn-dificultad").innerText = `Dificultad: ${DIFICULTADES[dificultad - 1].nombre}`;
+}
+
+function cambiarDificultad() {
+    dificultad = (dificultad % 3) + 1;
+    velocidadGato = DIFICULTADES[dificultad - 1].velGato;
+    guardar("dificultad", dificultad);
+    actualizarTextoDificultad();
+}
+
+function actualizarTextoSonido() {
+    document.getElementById("btn-sonido").textContent = `Sonido: ${sonidoActivo ? "Sí" : "No"}`;
+}
+
+function cambiarSonido() {
+    sonidoActivo = !sonidoActivo;
+    guardar("sonido", sonidoActivo ? "1" : "0");
+    actualizarTextoSonido();
+    prepararAudio();
+    sonar("equipar"); // pitido de confirmación (solo suena si se acaba de activar)
+}
+
+function actualizarTextoMusica() {
+    document.getElementById("btn-musica").textContent = `Música: ${musicaActiva ? "Sí" : "No"}`;
+}
+
+function cambiarMusica() {
+    musicaActiva = !musicaActiva;
+    guardar("musica", musicaActiva ? "1" : "0");
+    actualizarTextoMusica();
+    prepararAudio();
+    sincronizarMusica();
+}
+
+function borrarProgreso() {
+    if (!confirm("¿Seguro? Se borrarán monedas, skins, récord y lo que ha aprendido el ratón.")) return;
+
+    try {
+        ["record", "monedas", "skin", "skinsCompradas", "experienciaRaton", "dificultad"].forEach((clave) => {
+            localStorage.removeItem(claveAlmacen(clave));
+        });
+    } catch (e) {
+        // Si no se puede borrar, igual reiniciamos las variables de esta sesión
+    }
+
+    record = 0;
+    monedas = 0;
+    skinsCompradas = ["🐱"];
+    skinActual = "🐱";
+    experienciaRaton = 0;
+    dificultad = 1;
+    velocidadGato = DIFICULTADES[0].velGato;
+
+    actualizarTextoDificultad();
+    actualizarNivelVisualIA();
+    if (sesion) {
+        guardarLocal("actualizado", Date.now());
+        subirProgreso(); // también se borra en la nube
+    }
+    mostrarLogro("Progreso borrado");
+}
+
+// --- TIENDA Y SKINS ---
+function actualizarBotonesTienda() {
+    SKINS.forEach((skin) => {
+        const boton = skin.elemento;
+        if (!boton) return;
+        const extra = skin.velocidad > 1 ? ` +${Math.round((skin.velocidad - 1) * 100)}%` : "";
+
+        if (skin.emoji === skinActual) {
+            boton.textContent = `${skin.emoji} Equipado: ${skin.nombre}`;
+        } else if (skinsCompradas.includes(skin.emoji)) {
+            boton.textContent = `${skin.emoji} Equipar ${skin.nombre}${extra}`;
+        } else {
+            boton.textContent = `${skin.emoji} ${skin.nombre} (${skin.precio} 💰)${extra}`;
+        }
+    });
+}
+
+// Crea un botón por cada personaje del catálogo (antes estaban escritos a mano en el HTML)
+function construirTienda() {
+    const lista = document.getElementById("lista-tienda");
+    if (!lista) return;
+    if (SKINS[0].elemento) return; // ya construida: no duplicar botones
+    SKINS.forEach((skin) => {
+        const boton = document.createElement("button");
+        boton.onclick = () => comprarOEquipar(skin.emoji, skin.precio);
+        skin.elemento = boton;
+        lista.appendChild(boton);
+    });
+    actualizarBotonesTienda();
+}
+
+// Multiplicador de velocidad del personaje equipado
+function bonusSkin() {
+    const skin = SKINS.find((s) => s.emoji === skinActual);
+    return skin ? skin.velocidad : 1;
+}
+
+function comprarOEquipar(emoji, precio) {
+    if (skinsCompradas.includes(emoji)) {
+        sonar("equipar");
+        equiparSkin(emoji);
+    } else if (monedas >= precio) {
+        monedas -= precio;
+        skinsCompradas.push(emoji);
+        guardar("monedas", monedas);
+        guardar("skinsCompradas", JSON.stringify(skinsCompradas));
+        sonar("compra");
+        equiparSkin(emoji, "¡Compra exitosa! Skin equipada: " + emoji);
+    } else {
+        sonar("error");
+        mostrarLogro(`Te faltan ${precio - monedas} monedas`);
+    }
+    document.getElementById("monedas-tienda").innerText = monedas;
+    actualizarBotonesTienda();
+}
+
+function equiparSkin(emoji, mensaje) {
+    skinActual = emoji;
+    guardar("skin", skinActual);
+    const extra = bonusSkin() > 1 ? ` (+${Math.round((bonusSkin() - 1) * 100)}% velocidad)` : "";
+    mostrarLogro((mensaje || "Skin equipada: " + emoji) + extra);
+}
+
+// --- LÓGICA DEL JUEGO ---
+function actualizarGato(f) {
+    // Dirección según las teclas que están pulsadas AHORA (movimiento continuo y suave)
+    let dx = (teclas.derecha ? 1 : 0) - (teclas.izquierda ? 1 : 0);
+    let dy = (teclas.abajo ? 1 : 0) - (teclas.arriba ? 1 : 0);
+
+    // En diagonal se normaliza para que no sea más rápido que en línea recta
+    if (dx !== 0 && dy !== 0) {
+        dx *= Math.SQRT1_2;
+        dy *= Math.SQRT1_2;
+    }
+
+    // Control táctil: si hay un dedo apoyado, el gato va hacia él (tiene prioridad sobre el teclado)
+    if (toque.activo) {
+        const ox = toque.x - (gato.x + gato.w / 2);
+        const oy = toque.y - (gato.y + gato.h / 2);
+        const distanciaToque = Math.hypot(ox, oy);
+        if (distanciaToque > 8) { // zona muerta para que no tiemble al llegar
+            dx = ox / distanciaToque;
+            dy = oy / distanciaToque;
+        } else {
+            dx = 0;
+            dy = 0;
+        }
+    }
+
+    const velocidadActual = velocidadGato * bonusSkin();
+    gato.x += dx * velocidadActual * f;
+    gato.y += dy * velocidadActual * f;
+
+    gato.x = Math.max(0, Math.min(canvas.width - gato.w, gato.x));
+    gato.y = Math.max(0, Math.min(canvas.height - gato.h, gato.y));
+}
+
+function actualizarRaton(f) {
+    const dif = DIFICULTADES[dificultad - 1];
+
+    // Vector que va del gato hacia el ratón (la dirección en la que el ratón debe huir)
+    const dx = (raton.x + raton.w / 2) - (gato.x + gato.w / 2);
+    const dy = (raton.y + raton.h / 2) - (gato.y + gato.h / 2);
+    const dist = Math.hypot(dx, dy);
+
+    // Cuanto más ha cazado el jugador en total, más "aprende" el ratón
+    const nivelAprendizaje = Math.min(experienciaRaton, TOPE_APRENDIZAJE);
+
+    const radioVision = (180 + nivelAprendizaje * 1.5) * dif.factorVision;
+
+    let vel = (2.2 + nivel * 0.3 + nivelAprendizaje * 0.012) * dif.factorRaton;
+    // Tope: el ratón nunca es más rápido que el gato por mucho, así que siempre se le puede cazar
+    vel = Math.min(vel, velocidadGato * 1.05);
+
+    if (dist < radioVision) {
+        // HUIDA
+        let vx = dist > 0 ? dx / dist : 1;
+        let vy = dist > 0 ? dy / dist : 0;
+
+        // Si choca con una pared, desliza a lo largo de ella en vez de quedarse pegado
+        const margen = 2;
+        const bloqueadoX = (raton.x <= margen && vx < 0) || (raton.x >= canvas.width - raton.w - margen && vx > 0);
+        const bloqueadoY = (raton.y <= margen && vy < 0) || (raton.y >= canvas.height - raton.h - margen && vy > 0);
+
+        if (bloqueadoX && bloqueadoY) {
+            // Está en una esquina: no tiene salida
+            vx = 0;
+            vy = 0;
+        } else if (bloqueadoX) {
+            vy = vy >= 0 ? 1 : -1;
+            vx = 0;
+        } else if (bloqueadoY) {
+            vx = vx >= 0 ? 1 : -1;
+            vy = 0;
+        }
+
+        raton.x += vx * vel * f;
+        raton.y += vy * vel * f;
+        raton.targetX = null;
+        raton.targetY = null;
+    } else {
+        // PASEO ALEATORIO
+        // (antes "!raton.targetX" fallaba si el objetivo era justo 0)
+        if (raton.targetX === null || Math.random() < 0.02 * f) {
+            raton.targetX = Math.random() * (canvas.width - 50);
+            raton.targetY = Math.random() * (canvas.height - 50);
+        }
+        raton.x += (raton.targetX - raton.x) * 0.05 * f;
+        raton.y += (raton.targetY - raton.y) * 0.05 * f;
+    }
+
+    raton.x = Math.max(0, Math.min(canvas.width - raton.w, raton.x));
+    raton.y = Math.max(0, Math.min(canvas.height - raton.h, raton.y));
+}
+
+// La colisión ahora se revisa en CADA frame (antes solo al pulsar una tecla)
+function revisarColision() {
+    const distancia = Math.hypot(
+        (gato.x + gato.w / 2) - (raton.x + raton.w / 2),
+        (gato.y + gato.h / 2) - (raton.y + raton.h / 2)
+    );
+    if (distancia >= RADIO_CAPTURA) return;
+
+    const dif = DIFICULTADES[dificultad - 1];
+
+    puntos++;
+    monedas += dif.monedasPorCaptura;
+    monedasPartida += dif.monedasPorCaptura;
+    experienciaRaton++;
+
+    // Las monedas ahora se guardan al ganarlas (antes solo al comprar, y se perdían)
+    guardar("monedas", monedas);
+    guardar("experienciaRaton", experienciaRaton);
+
+    // Subida de nivel: cada CAPTURAS_POR_NIVEL ratones
+    const nivelNuevo = Math.floor(puntos / CAPTURAS_POR_NIVEL) + 1;
+    if (nivelNuevo > nivel) {
+        nivel = nivelNuevo;
+        tiempo += BONUS_TIEMPO_NIVEL;
+        mostrarLogro(`¡Nivel ${nivel}! +${BONUS_TIEMPO_NIVEL}s`);
+        sonar("nivel");
+    } else {
+        sonar("captura");
+    }
+
+    actualizarMarcador();
+    actualizarNivelVisualIA();
+    reaparecerRaton();
+}
+
+function actualizarTiempo(dt) {
+    tiempo -= dt;
+
+    // Solo tocamos el HTML cuando cambia el número entero de segundos
+    const segundos = Math.max(0, Math.ceil(tiempo));
+    if (segundos !== ultimoSegundoMostrado) {
+        ultimoSegundoMostrado = segundos;
+        document.getElementById("tiempo-valor").innerText = segundos;
+    }
+
+    if (tiempo <= 0) terminarJuego();
+}
+
+// --- BUCLE PRINCIPAL DEL JUEGO ---
+function gameLoop(timestamp) {
+    if (!juegoIniciado) return;
+    sincronizarMusica();
+
+    // En pausa no se actualiza nada, solo se redibuja. Se reinicia el reloj para que al volver no haya salto.
+    if (pausado) {
+        ultimoTimestamp = null;
+        dibujar();
+        animacionId = requestAnimationFrame(gameLoop);
+        return;
+    }
+
+    if (ultimoTimestamp === null) ultimoTimestamp = timestamp;
+    // dt = segundos desde el frame anterior. Se limita a 0.1 para que, si la pestaña
+    // estuvo en segundo plano, el juego no "salte" ni se acabe el tiempo de golpe.
+    const dt = Math.min((timestamp - ultimoTimestamp) / 1000, 0.1);
+    ultimoTimestamp = timestamp;
+    // f = cuántos "frames a 60 FPS" equivale este frame; así la velocidad es igual en pantallas de 60 o 144 Hz
+    const f = dt * 60;
+
+    actualizarGato(f);
+    actualizarRaton(f);
+    revisarColision();
+    dibujar();
+    actualizarTiempo(dt);
+
+    if (juegoIniciado) {
+        animacionId = requestAnimationFrame(gameLoop);
+    }
+}
+
+function dibujar() {
+    ctx.fillStyle = FONDOS[(nivel - 1) % FONDOS.length];
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Barra dorada: cuánto falta para el siguiente nivel
+    const progreso = (puntos % CAPTURAS_POR_NIVEL) / CAPTURAS_POR_NIVEL;
+    ctx.fillStyle = "#333333";
+    ctx.fillRect(0, 0, canvas.width, 8);
+    ctx.fillStyle = "gold";
+    ctx.fillRect(0, 0, canvas.width * progreso, 8);
+
+    ctx.font = "40px Arial";
+    ctx.fillText(skinActual, gato.x, gato.y + 35);
+    const emojiRaton = RATONES[Math.floor((nivel - 1) / NIVELES_POR_RATON) % RATONES.length];
+    ctx.fillText(emojiRaton, raton.x, raton.y + 30);
+
+    if (pausado) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.font = "24px 'Press Start 2P', Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("PAUSA", canvas.width / 2, canvas.height / 2);
+        ctx.textAlign = "left";
+    }
+}
+
+// --- CONTROLES ---
+const MAPA_TECLAS = {
+    arrowup: "arriba",
+    w: "arriba",
+    arrowdown: "abajo",
+    s: "abajo",
+    arrowleft: "izquierda",
+    a: "izquierda",
+    arrowright: "derecha",
+    d: "derecha"
+};
+
+window.addEventListener("keydown", (e) => {
+    if (juegoIniciado && (e.key === "p" || e.key === "P" || e.key === "Escape")) {
+        pausado = !pausado;
+        sonar("pausa");
+        return;
+    }
+    const direccion = MAPA_TECLAS[e.key.toLowerCase()];
+    if (!direccion || !juegoIniciado) return;
+    e.preventDefault(); // evita que las flechas hagan scroll en la página
+    teclas[direccion] = true;
+});
+
+window.addEventListener("keyup", (e) => {
+    const direccion = MAPA_TECLAS[e.key.toLowerCase()];
+    if (direccion) teclas[direccion] = false;
+});
+
+// Si la ventana pierde el foco con una tecla pulsada, el gato no se queda "atascado" caminando
+window.addEventListener("blur", () => {
+    if (juegoIniciado) pausado = true; // al cambiar de ventana, se pausa sola
+    teclas.arriba = teclas.abajo = teclas.izquierda = teclas.derecha = false;
+});
+
+// Control táctil / mouse: mantén apoyado el dedo y el gato va hacia él
+function posicionEnCanvas(e) {
+    const caja = canvas.getBoundingClientRect();
+    // El canvas puede verse más pequeño que 600x400 en pantallas chicas, por eso se escala
+    toque.x = (e.clientX - caja.left) * (canvas.width / caja.width);
+    toque.y = (e.clientY - caja.top) * (canvas.height / caja.height);
+}
+
+canvas.addEventListener("pointerdown", (e) => {
+    if (!juegoIniciado) return;
+    if (pausado) { pausado = false; return; } // tocar el canvas en pausa reanuda
+    e.preventDefault();
+    toque.activo = true;
+    posicionEnCanvas(e);
+});
+canvas.addEventListener("pointermove", (e) => {
+    if (toque.activo) posicionEnCanvas(e);
+});
+["pointerup", "pointercancel", "pointerleave"].forEach((tipo) => {
+    canvas.addEventListener(tipo, () => { toque.activo = false; });
+});
+
+// Inicialización automática de la interfaz al cargar
+// ============================================================
+//  CUENTAS (opcional): nombre + contraseña, con Firebase
+// ============================================================
+// Cómo activarlo: crea un proyecto en console.firebase.google.com, registra una app web y pega abajo
+// su configuración. Mientras apiKey diga "PEGA_AQUI", el juego funciona normal y sin pantalla de login.
+const FIREBASE_CONFIG = {
+    apiKey: "PEGA_AQUI",
+    authDomain: "",
+    projectId: "",
+    appId: ""
+};
+const FIREBASE_VERSION = "12.19.0";
+const DOMINIO_CUENTAS = "gatocazador.example.com"; // Firebase pide un correo: se fabrica con tu nombre (no se envía nada)
+const RETRASO_SUBIDA_NUBE = 2000;                   // ms que se espera antes de subir cambios (agrupa varios en uno)
+const FIREBASE_ACTIVO = FIREBASE_CONFIG.apiKey !== "" && !FIREBASE_CONFIG.apiKey.startsWith("PEGA");
+
+let temporizadorNube = null;
+let accionEnCurso = false;        // true mientras se crea cuenta / entra / sale (evita que el "oyente" de sesión se pise)
+let nubeConectada = false;
+let avisoPermisoMostrado = false;
+
+// Todo lo que habla con Firebase está en este objeto. El resto del juego no sabe qué servicio hay detrás.
+const nube = {
+    listo: false,
+    auth: null,
+    db: null,
+    f: null,
+    async iniciar() {
+        if (this.listo) return;
+        const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/`;
+        const [mApp, mAuth, mDb] = await Promise.all([
+            import(base + "firebase-app.js"),
+            import(base + "firebase-auth.js"),
+            import(base + "firebase-firestore.js")
+        ]);
+        const app = mApp.initializeApp(FIREBASE_CONFIG);
+        this.auth = mAuth.getAuth(app);
+        this.db = mDb.getFirestore(app);
+        this.f = { ...mAuth, ...mDb };
+        this.listo = true;
+    },
+    alCambiarSesion(funcion) { return this.f.onAuthStateChanged(this.auth, funcion); },
+    async registrar(email, clave) { return (await this.f.createUserWithEmailAndPassword(this.auth, email, clave)).user; },
+    async entrar(email, clave) { return (await this.f.signInWithEmailAndPassword(this.auth, email, clave)).user; },
+    async salir() { await this.f.signOut(this.auth); },
+    async leer(uid) {
+        const doc = await this.f.getDoc(this.f.doc(this.db, "jugadores", uid));
+        return doc.exists() ? doc.data() : null;
+    },
+    async escribir(uid, datos) {
+        await this.f.setDoc(this.f.doc(this.db, "jugadores", uid), datos, { merge: true });
+    }
+};
+
+// --- Progreso <-> nube ---
+function datosDeProgreso() {
+    return {
+        nombre: sesion.nombre,
+        monedas: monedas,
+        record: record,
+        skinsCompradas: skinsCompradas.slice(),
+        skin: skinActual,
+        experienciaRaton: experienciaRaton,
+        dificultad: dificultad,
+        actualizado: leerNumero("actualizado") || Date.now()
+    };
+}
+
+function programarSubidaNube() {
+    if (!sesion || !nube.listo) return;
+    clearTimeout(temporizadorNube);
+    temporizadorNube = setTimeout(subirProgreso, RETRASO_SUBIDA_NUBE);
+}
+
+async function subirProgreso() {
+    clearTimeout(temporizadorNube);
+    if (!sesion || !nube.listo) return false;
+    try {
+        await nube.escribir(sesion.uid, datosDeProgreso());
+        return true;
+    } catch (e) {
+        // Sin internet no pasa nada: queda guardado en el dispositivo y se sube en el próximo cambio
+        if (e && e.code === "permission-denied" && !avisoPermisoMostrado) {
+            avisoPermisoMostrado = true;
+            mostrarLogro("La nube rechazó guardar: revisa las reglas de Firestore");
+        }
+        return false;
+    }
+}
+
+// Vuelve a leer todas las variables del progreso desde el almacenamiento del perfil activo
+function recargarProgreso() {
+    record = leerNumero("record");
+    monedas = leerNumero("monedas");
+    experienciaRaton = leerNumero("experienciaRaton");
+    dificultad = Math.min(3, Math.max(1, leerNumero("dificultad") || 1));
+    velocidadGato = DIFICULTADES[dificultad - 1].velGato;
+    skinsCompradas = leerLista("skinsCompradas", ["🐱"]);
+    if (!skinsCompradas.includes("🐱")) skinsCompradas.push("🐱");
+    skinActual = leerTexto("skin", "🐱");
+    if (!skinsCompradas.includes(skinActual)) skinActual = "🐱";
+    actualizarTextoDificultad();
+    actualizarNivelVisualIA();
+    actualizarBotonesTienda();
+}
+
+// Devuelve true si pudo hablar con la nube, false si no hubo conexión
+async function bajarProgreso() {
+    recargarProgreso(); // primero lo que haya guardado en este dispositivo para esta cuenta
+    let datos = null;
+    try {
+        datos = await nube.leer(sesion.uid);
+    } catch (e) {
+        mostrarLogro("Sin conexión: se usa el progreso de este dispositivo");
+        return false;
+    }
+    // Gana lo más reciente: si jugaste sin internet, tu progreso local es más nuevo y se sube
+    if (!datos || leerNumero("actualizado") > Number(datos.actualizado || 0)) {
+        await subirProgreso();
+        return true;
+    }
+    guardarLocal("monedas", Math.max(0, Number(datos.monedas) || 0));
+    guardarLocal("record", Math.max(0, Number(datos.record) || 0));
+    guardarLocal("experienciaRaton", Math.max(0, Number(datos.experienciaRaton) || 0));
+    guardarLocal("dificultad", Math.min(3, Math.max(1, Number(datos.dificultad) || 1)));
+    guardarLocal("skin", typeof datos.skin === "string" ? datos.skin : "🐱");
+    const lista = Array.isArray(datos.skinsCompradas) ? datos.skinsCompradas.filter((s) => typeof s === "string") : ["🐱"];
+    guardarLocal("skinsCompradas", JSON.stringify(lista));
+    guardarLocal("actualizado", Number(datos.actualizado) || 0);
+    recargarProgreso();
+    return true;
+}
+
+// --- Pantalla de login ---
+function mensajeLogin(texto, esError) {
+    const elemento = document.getElementById("login-mensaje");
+    if (!elemento) return;
+    elemento.textContent = texto;
+    elemento.style.color = esError ? "#b30009" : "#333333";
+}
+
+function bloquearLogin(bloqueado) {
+    ["btn-entrar", "btn-crear"].forEach((id) => {
+        const boton = document.getElementById(id);
+        if (boton) boton.disabled = bloqueado;
+    });
+}
+
+function nombreDesdeEmail(email) {
+    return String(email || "").split("@")[0];
+}
+
+function leerFormularioLogin() {
+    const nombre = document.getElementById("login-nombre").value.trim().toLowerCase();
+    const clave = document.getElementById("login-clave").value;
+    if (!/^[a-z0-9_.-]{3,20}$/.test(nombre)) {
+        mensajeLogin("Nombre: de 3 a 20 letras o números (sin espacios ni tildes)", true);
+        return null;
+    }
+    if (clave.length < 6) {
+        mensajeLogin("La contraseña necesita al menos 6 caracteres", true);
+        return null;
+    }
+    return { nombre: nombre, clave: clave, email: `${nombre}@${DOMINIO_CUENTAS}` };
+}
+
+function textoError(e) {
+    const codigo = (e && e.code) || "";
+    if (codigo === "auth/email-already-in-use") return "Ese nombre ya existe. Prueba otro, o pulsa Entrar si es tuyo";
+    if (["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found", "auth/invalid-login-credentials"].includes(codigo)) return "Nombre o contraseña incorrectos";
+    if (codigo === "auth/weak-password") return "La contraseña necesita al menos 6 caracteres";
+    if (codigo === "auth/network-request-failed") return "Sin conexión a internet";
+    if (codigo === "auth/too-many-requests") return "Demasiados intentos. Espera un momento";
+    if (codigo === "auth/operation-not-allowed") return "En Firebase falta activar el acceso con correo y contraseña";
+    if (codigo.startsWith("auth/") && codigo.includes("api-key")) return "La configuración de Firebase no es válida";
+    return "No se pudo completar" + (codigo ? " (" + codigo + ")" : "");
+}
+
+function actualizarSesionUI() {
+    const boton = document.getElementById("btn-sesion");
+    const estado = document.getElementById("sesion-estado");
+    if (!boton || !estado) return;
+    if (!FIREBASE_ACTIVO) {
+        boton.style.display = "none";
+        estado.style.display = "none";
+        return;
+    }
+    boton.style.display = "inline-block";
+    estado.style.display = "block";
+    if (sesion) {
+        estado.textContent = `Jugador: ${sesion.nombre}`;
+        boton.textContent = "Cerrar sesión";
+    } else {
+        estado.textContent = "Jugando sin cuenta";
+        boton.textContent = "Iniciar sesión";
+    }
+}
+
+function entrarAlMenu() {
+    const clave = document.getElementById("login-clave");
+    if (clave) clave.value = "";
+    cambiarPantalla("menu-inicio");
+    actualizarSesionUI();
+    actualizarNivelVisualIA();
+}
+
+function mostrarLogin(mensaje) {
+    cambiarPantalla("menu-login");
+    mensajeLogin(mensaje || "", false);
+    bloquearLogin(false);
+}
+
+// --- Acciones ---
+async function conectarNube() {
+    if (nubeConectada) return true;
+    try {
+        await nube.iniciar();
+        nube.alCambiarSesion(alCambiarSesion);
+        nubeConectada = true;
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+async function activarSesion(usuario) {
+    sesion = { uid: usuario.uid, nombre: nombreDesdeEmail(usuario.email) };
+    return await bajarProgreso();
+}
+
+async function crearCuenta() {
+    const formulario = leerFormularioLogin();
+    if (!formulario) return;
+    accionEnCurso = true;
+    bloquearLogin(true);
+    mensajeLogin("Creando cuenta...", false);
+    try {
+        if (!(await conectarNube())) {
+            mensajeLogin("Sin conexión con el servidor. Puedes jugar sin cuenta.", true);
+            return;
+        }
+        const usuario = await nube.registrar(formulario.email, formulario.clave);
+        sesion = { uid: usuario.uid, nombre: formulario.nombre };
+        // El progreso que ya tenías jugando sin cuenta pasa a la cuenta nueva
+        guardarLocal("monedas", monedas);
+        guardarLocal("record", record);
+        guardarLocal("skin", skinActual);
+        guardarLocal("skinsCompradas", JSON.stringify(skinsCompradas));
+        guardarLocal("experienciaRaton", experienciaRaton);
+        guardarLocal("dificultad", dificultad);
+        guardarLocal("actualizado", Date.now());
+        await subirProgreso();
+        entrarAlMenu();
+        mostrarLogro("¡Cuenta creada! Bienvenido, " + formulario.nombre);
+    } catch (e) {
+        mensajeLogin(textoError(e), true);
+    } finally {
+        accionEnCurso = false;
+        bloquearLogin(false);
+    }
+}
+
+async function iniciarSesion() {
+    const formulario = leerFormularioLogin();
+    if (!formulario) return;
+    accionEnCurso = true;
+    bloquearLogin(true);
+    mensajeLogin("Entrando...", false);
+    try {
+        if (!(await conectarNube())) {
+            mensajeLogin("Sin conexión con el servidor. Puedes jugar sin cuenta.", true);
+            return;
+        }
+        const usuario = await nube.entrar(formulario.email, formulario.clave);
+        const enLinea = await activarSesion(usuario);
+        entrarAlMenu();
+        if (enLinea) mostrarLogro("Bienvenido de nuevo, " + sesion.nombre); // si no hubo conexión, se deja el aviso de "Sin conexión"
+    } catch (e) {
+        mensajeLogin(textoError(e), true);
+    } finally {
+        accionEnCurso = false;
+        bloquearLogin(false);
+    }
+}
+
+async function cerrarSesion() {
+    accionEnCurso = true;
+    try {
+        await subirProgreso();
+        await nube.salir();
+    } catch (e) {
+        // Aunque falle, cerramos la sesión en este dispositivo
+    }
+    sesion = null;
+    accionEnCurso = false;
+    guardar("invitado", "0");
+    recargarProgreso(); // vuelve el progreso de "sin cuenta" de este dispositivo
+    actualizarSesionUI();
+    mostrarLogin("Sesión cerrada");
+}
+
+function botonSesion() {
+    if (sesion) cerrarSesion();
+    else mostrarLogin("");
+}
+
+function jugarSinCuenta() {
+    guardar("invitado", "1"); // se recuerda para no volver a mostrar el login cada vez
+    entrarAlMenu();
+}
+
+// Firebase avisa aquí cuando hay (o no) una sesión guardada en el navegador
+function alCambiarSesion(usuario) {
+    if (accionEnCurso || juegoIniciado) return;
+    if (usuario) {
+        if (sesion && sesion.uid === usuario.uid) return;
+        activarSesion(usuario).then(entrarAlMenu);
+    } else {
+        if (sesion) {
+            sesion = null; // la sesión se cerró desde otro sitio
+            recargarProgreso();
+        }
+        if (leerTexto("invitado", "0") === "1") entrarAlMenu();
+        else mostrarLogin("");
+    }
+}
+
+async function prepararNube() {
+    if (!FIREBASE_ACTIVO) return;
+    cambiarPantalla("menu-login");
+    mensajeLogin("Conectando...", false);
+    bloquearLogin(true);
+    if (!(await conectarNube())) {
+        mensajeLogin("Sin conexión con el servidor. Puedes jugar sin cuenta.", true);
+        bloquearLogin(false);
+    }
+}
+
+// Los navegadores solo permiten audio después de que el jugador interactúa: lo activamos con el primer clic, toque o tecla
+["pointerdown", "keydown"].forEach((tipo) => window.addEventListener(tipo, prepararAudio));
+
+construirTienda();
+actualizarTextoSonido();
+actualizarTextoMusica();
+actualizarTextoDificultad();
+actualizarNivelVisualIA();
+actualizarSesionUI();
+prepararNube();
+
+    </script>
+</body>
+</html>
